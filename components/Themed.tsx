@@ -43,3 +43,10 @@ export function View(props: ViewProps) {
 
   return <DefaultView style={[{ backgroundColor }, style]} {...otherProps} />;
 }
+
+export function SecondaryView(props: ViewProps) {
+  const { style, lightColor, darkColor, ...otherProps } = props;
+  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'backgroundSecondary');
+
+  return <DefaultView style={[{ backgroundColor: backgroundColor }, style]} {...otherProps} />;
+}
