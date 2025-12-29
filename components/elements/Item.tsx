@@ -4,7 +4,7 @@ import { calcularValorTotal, formatarValor } from "@/utils/itemCalculations";
 import { Feather } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { Text } from "../Themed";
+import { Input, Text } from "../Themed";
 import { StatusIcon } from "./StatusIcon";
 
 type props = {
@@ -64,39 +64,60 @@ export function Item({ itemId, data }: props) {
       </TouchableOpacity>
       <View style={styles.content}>
         <View style={{
-          gap: 8,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          width: "100%"
+          gap: 12,
         }}>
-          <View>
-            <Text style={styles.description}>{data.nome}</Text>
+          <View
+            style={{
+              gap: 2,
+            }}
+          >
+            <View style={{
+              flexDirection: "row",
+              alignItems: "center",
+              width: "100%",
+              gap: 4,
+              justifyContent: "space-between",
+            }}>
+              <Text style={styles.description}>{data.nome}</Text>
+
+              <TouchableOpacity onPress={onDelete}>
+                <Feather name="trash" size={16} color="red" />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.info}>R$ {data.valor}/{data.tipo}</Text>
+
           </View>
-          <View style={styles.quantidadeItens}>
-            <TouchableOpacity
-              onPress={() => handleSubQuantidadeItem()}
-              style={{ width: 20, height: 20, justifyContent: "center", alignItems: "center" }}
-            >
-              <Feather name="minus" color="#cccccc" size={16} />
-            </TouchableOpacity>
-            <Text style={{
-              fontSize: 18
-            }}>{quantidadeItem}</Text>
-            <TouchableOpacity
-              onPress={() => handleSomaQuantidadeItem()}
-              style={{ width: 20, height: 20, justifyContent: "center", alignItems: "center" }}
-            >
-              <Feather name="plus" color="#cccccc" size={16} />
-            </TouchableOpacity>
+
+          <View
+            style={{
+              gap: 8,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%"
+            }}
+          >
+            <Input style={styles.quantidadeItens}>
+              <TouchableOpacity
+                onPress={() => handleSubQuantidadeItem()}
+                style={{ width: 12, height: 12, justifyContent: "center", alignItems: "center" }}
+              >
+                <Feather name="minus" color="#cccccc" size={12} />
+              </TouchableOpacity>
+              <Text style={{
+                fontSize: 12
+              }}>{quantidadeItem}</Text>
+              <TouchableOpacity
+                onPress={() => handleSomaQuantidadeItem()}
+                style={{ width: 12, height: 12, justifyContent: "center", alignItems: "center" }}
+              >
+                <Feather name="plus" color="#cccccc" size={12} />
+              </TouchableOpacity>
+            </Input>
+            <Text style={styles.valorTotal}>{formatarValor(valorTotal)}</Text>
           </View>
         </View>
       </View>
-      <Text style={styles.valorTotal}>{formatarValor(valorTotal)}</Text>
-      <TouchableOpacity onPress={onDelete}>
-        <Feather name="trash" size={22} color="red" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -115,11 +136,10 @@ const styles = StyleSheet.create({
     flex: 1
   },
   description: {
-    fontSize: 22,
-    color: "#FFF"
+    fontSize: 14,
   },
   info: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#757575"
   },
   deleteButton: {
@@ -131,12 +151,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#141b24",
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     padding: 4
   },
   valorTotal: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#CCCCCC',
   }

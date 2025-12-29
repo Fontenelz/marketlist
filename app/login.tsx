@@ -1,22 +1,169 @@
 import { Text } from '@/components/Themed';
+import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/services/firebase';
 import { Feather } from '@expo/vector-icons';
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { GoogleAuthProvider, OAuthProvider, signInWithCredential, signInWithPopup } from 'firebase/auth';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+// Completa a autenticação no navegador
+WebBrowser.maybeCompleteAuthSession();
+
+// Configura o Google Sign-In
+const configureGoogleSignIn = () => {
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+
+  if (!webClientId) {
+    console.warn('Google Client ID não configurado. Verifique a variável EXPO_PUBLIC_GOOGLE_CLIENT_ID.');
+    return;
+  }
+
+  GoogleSignin.configure({
+    webClientId: webClientId, // Obrigatório para autenticação com Firebase
+    offlineAccess: true, // Permite acesso offline
+    forceCodeForRefreshToken: true, // Força código para refresh token
+  });
+};
+
+// Configura na inicialização
+configureGoogleSignIn();
+
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-  const handleGoogleLogin = () => {
-    // TODO: Implementar login com Google
-    console.log('Login com Google');
-    // router.replace('/(tabs)');
+  // Redireciona se já estiver autenticado
+  useEffect(() => {
+    if (user) {
+      router.replace('/(tabs)');
+    }
+  }, [user]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+
+      // Para web, usa popup do Firebase
+      if (Platform.OS === 'web') {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        if (result.user) {
+          router.replace('/(tabs)');
+        }
+        return;
+      }
+
+      // Para mobile, usa Google Sign-In nativo
+      // Verifica se o Google Play Services está disponível (Android)
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      }
+
+      // Realiza o sign-in
+      const response = await GoogleSignin.signIn();
+
+      if (isSuccessResponse(response)) {
+        // Obtém o ID token do Google
+        const { idToken } = response.data;
+
+        if (idToken) {
+          // Cria uma credencial do Firebase com o ID token do Google
+          const googleCredential = GoogleAuthProvider.credential(idToken);
+
+          // Autentica no Firebase
+          await signInWithCredential(auth, googleCredential);
+
+          // O redirecionamento será feito automaticamente pelo useEffect quando o user mudar
+        } else {
+          throw new Error('ID token não recebido do Google');
+        }
+      } else {
+        // Usuário cancelou o login
+        return;
+      }
+    } catch (error: any) {
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.SIGN_IN_CANCELLED:
+            // Usuário cancelou o login - não é um erro
+            return;
+          case statusCodes.IN_PROGRESS:
+            // Operação já em progresso
+            Alert.alert('Aviso', 'Login já está em andamento. Aguarde...');
+            return;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            // Android: Google Play Services não disponível
+            Alert.alert(
+              'Erro',
+              'Google Play Services não está disponível. Por favor, atualize o Google Play Services.'
+            );
+            break;
+          default:
+            console.error('Erro no Google Sign-In:', error);
+            Alert.alert('Erro', 'Não foi possível fazer login com Google. Tente novamente.');
+        }
+      } else {
+        console.error('Erro desconhecido no login:', error);
+        Alert.alert('Erro', error?.message || 'Não foi possível fazer login com Google. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAppleLogin = () => {
-    // TODO: Implementar login com Apple
-    console.log('Login com Apple');
-    // router.replace('/(tabs)');
+
+  const handleAppleLogin = async () => {
+    try {
+      setLoading(true);
+
+      if (Platform.OS === 'ios') {
+        const credential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+        });
+
+        const { identityToken, authorizationCode } = credential;
+
+        if (identityToken) {
+          const provider = new OAuthProvider('apple.com');
+          const credential_firebase = provider.credential({
+            idToken: identityToken,
+            rawNonce: authorizationCode || undefined,
+          });
+
+          await signInWithCredential(auth, credential_firebase);
+          // O redirecionamento será feito automaticamente pelo useEffect quando o user mudar
+        } else {
+          throw new Error('Token de identidade não recebido da Apple');
+        }
+      } else {
+        Alert.alert('Aviso', 'Login com Apple está disponível apenas no iOS.');
+      }
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        // Usuário cancelou o login
+        return;
+      }
+      console.error('Erro no login da Apple:', error);
+      Alert.alert('Erro', 'Não foi possível fazer login com Apple. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,50 +185,51 @@ export default function LoginScreen() {
       {/* Botões de login */}
       <View style={styles.buttonsContainer}>
         {/* Botão Google */}
-        <TouchableOpacity
-          style={styles.googleButton}
-          onPress={handleGoogleLogin}
-          activeOpacity={0.8}
-        >
-          <View style={styles.buttonContent}>
-            <View style={styles.googleIconContainer}>
-              <View style={styles.googleIcon}>
-                <Text style={styles.googleIconText}>G</Text>
+        {Platform.OS === 'web' ? (
+          <TouchableOpacity
+            style={[styles.googleButton, loading && styles.buttonDisabled]}
+            onPress={handleGoogleSignIn}
+            activeOpacity={0.8}
+            disabled={loading}
+          >
+            <View style={styles.buttonContent}>
+              <View style={styles.googleIconContainer}>
+                <View style={styles.googleIcon}>
+                  <Text style={styles.googleIconText}>G</Text>
+                </View>
               </View>
+              <Text style={styles.googleButtonText}>Continuar com Google</Text>
             </View>
-            <Text style={styles.googleButtonText}>Continuar com Google</Text>
-          </View>
-        </TouchableOpacity>
-
+          </TouchableOpacity>
+        ) : (
+          <GoogleSigninButton
+            style={styles.googleButton}
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Light}
+            onPress={handleGoogleSignIn}
+            disabled={loading}
+          />
+        )}
         {/* Botão Apple */}
         {Platform.OS === 'ios' && (
           <TouchableOpacity
-            style={styles.appleButton}
+            style={[styles.appleButton, loading && styles.buttonDisabled]}
             onPress={handleAppleLogin}
             activeOpacity={0.8}
+            disabled={loading}
           >
             <View style={styles.buttonContent}>
-              <Feather name="apple" size={20} color="#FFFFFF" />
+              <Feather name="airplay" size={20} color="#FFFFFF" />
               <Text style={styles.appleButtonText}>Continuar com Apple</Text>
             </View>
           </TouchableOpacity>
         )}
 
-        {/* Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>ou</Text>
-          <View style={styles.divider} />
-        </View>
-
-        {/* Link para pular login (temporário) */}
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => router.replace('/(tabs)')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.skipButtonText}>Continuar sem login</Text>
-        </TouchableOpacity>
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2646B1" />
+          </View>
+        )}
       </View>
 
       {/* Footer */}
@@ -226,34 +374,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#374151',
-  },
-  dividerText: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginHorizontal: 16,
-  },
-  skipButton: {
-    height: 56,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#374151',
-  },
-  skipButtonText: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
   footer: {
     alignItems: 'center',
     paddingTop: 24,
@@ -267,6 +387,13 @@ const styles = StyleSheet.create({
   footerLink: {
     color: '#2646B1',
     textDecorationLine: 'underline',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  loadingContainer: {
+    marginTop: 16,
+    alignItems: 'center',
   },
 });
 

@@ -50,3 +50,10 @@ export function SecondaryView(props: ViewProps) {
 
   return <DefaultView style={[{ backgroundColor: backgroundColor }, style]} {...otherProps} />;
 }
+
+export function Input(props: ViewProps) {
+  const { style, lightColor, darkColor, ...otherProps } = props;
+  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'inputBackground');
+
+  return <DefaultView style={[{ backgroundColor: backgroundColor }, style]} {...otherProps} />;
+}
