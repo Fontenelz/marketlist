@@ -225,14 +225,12 @@ export function ListSelector() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
+
   selectorButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#141b24',
+    backgroundColor: '#C4c4c4',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
