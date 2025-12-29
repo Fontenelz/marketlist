@@ -1,8 +1,8 @@
 import { Button } from '@/components/elements/Button';
 import { Input } from '@/components/elements/Input';
 import { useAuth } from '@/contexts/AuthContext';
-import { useListas } from '@/contexts/ListasContext';
-import { salvarProduto } from '@/repositories/produtoRepository';
+import { useLists } from '@/contexts/ListsContext';
+import { saveProduct } from '@/repositories/productRepository';
 import { eFilterStatus } from '@/types/FIlterStatus';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -14,22 +14,22 @@ const TIPOS = ['kg', 'litros', 'unidade', 'gramas', 'ml'];
 export default function ModalScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { listaAtual } = useListas();
+  const { currentList } = useLists();
 
-  const [nome, setNome] = useState('');
-  const [quantidade, setQuantidade] = useState('');
-  const [tipo, setTipo] = useState('kg');
-  const [valor, setValor] = useState('');
+  const [name, setName] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [type, setType] = useState('kg');
+  const [price, setPrice] = useState('');
   const [status, setStatus] = useState<eFilterStatus>(eFilterStatus.PENDING);
-  const [showTipoPicker, setShowTipoPicker] = useState(false);
+  const [showTypePicker, setShowTypePicker] = useState(false);
 
   const handleSubmit = async () => {
-    if (!nome.trim() || !quantidade || !valor) {
+    if (!name.trim() || !quantity || !price) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
     }
 
-    if (!listaAtual) {
+    if (!currentList) {
       Alert.alert('Erro', 'Por favor, selecione uma lista primeiro');
       router.back();
       return;
@@ -41,13 +41,13 @@ export default function ModalScreen() {
     }
 
     try {
-      await salvarProduto({
-        nome: nome.trim(),
-        quantidade: parseFloat(quantidade) || 0,
+      await saveProduct({
+        name: name.trim(),
+        quantity: parseFloat(quantity) || 0,
         status: status,
-        tipo,
-        valor: parseFloat(valor) || 0,
-        listaId: listaAtual.id,
+        type,
+        price: parseFloat(price) || 0,
+        listId: currentList.id,
         userId: user.uid,
       });
 
@@ -88,23 +88,23 @@ export default function ModalScreen() {
                 flexDirection: "row"
               }}
             >
-              {/* Nome do Item */}
+              {/* Item Name */}
               <View style={styles.fieldContainer}>
                 <Input
                   placeholder="Ex: Arroz, Feijão, Leite..."
-                  value={nome}
-                  onChangeText={setNome}
+                  value={name}
+                  onChangeText={setName}
                   autoCapitalize="words"
                 />
               </View>
 
-              {/* Quantidade */}
+              {/* Quantity */}
               <View style={styles.fieldContainer}>
                 <Input
                   type="number"
                   placeholder="Ex: 2, 1.5, 10..."
-                  value={quantidade}
-                  onChangeText={setQuantidade}
+                  value={quantity}
+                  onChangeText={setQuantity}
                   keyboardType="decimal-pad"
                 />
               </View>
@@ -115,52 +115,52 @@ export default function ModalScreen() {
                 flexDirection: "row"
               }}
             >
-              {/* Valor Unitário */}
+              {/* Unit Price */}
               <View style={styles.fieldContainer}>
                 <Input
                   type="number"
                   placeholder="Ex: 8.99, 10.50..."
-                  value={valor}
-                  onChangeText={setValor}
+                  value={price}
+                  onChangeText={setPrice}
                   keyboardType="decimal-pad"
                 />
               </View>
-              {/* Tipo */}
+              {/* Type */}
               <View style={styles.fieldContainer}>
                 <TouchableOpacity
                   style={styles.pickerButton}
-                  onPress={() => setShowTipoPicker(!showTipoPicker)}
+                  onPress={() => setShowTypePicker(!showTypePicker)}
                 >
-                  <Text style={styles.pickerText}>{tipo}</Text>
+                  <Text style={styles.pickerText}>{type}</Text>
                   <Feather
-                    name={showTipoPicker ? "chevron-up" : "chevron-down"}
+                    name={showTypePicker ? "chevron-up" : "chevron-down"}
                     size={20}
                     color="#9CA3AF"
                   />
                 </TouchableOpacity>
-                {showTipoPicker && (
+                {showTypePicker && (
                   <View style={styles.pickerOptions}>
                     {TIPOS.map((t) => (
                       <TouchableOpacity
                         key={t}
                         style={[
                           styles.pickerOption,
-                          tipo === t && styles.pickerOptionSelected,
+                          type === t && styles.pickerOptionSelected,
                         ]}
                         onPress={() => {
-                          setTipo(t);
-                          setShowTipoPicker(false);
+                          setType(t);
+                          setShowTypePicker(false);
                         }}
                       >
                         <Text
                           style={[
                             styles.pickerOptionText,
-                            tipo === t && styles.pickerOptionTextSelected,
+                            type === t && styles.pickerOptionTextSelected,
                           ]}
                         >
                           {t}
                         </Text>
-                        {tipo === t && (
+                        {type === t && (
                           <Feather name="check" size={18} color="#2646B1" />
                         )}
                       </TouchableOpacity>

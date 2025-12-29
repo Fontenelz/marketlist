@@ -1,6 +1,6 @@
-import { atualizarProduto, excluirProduto, ProdutoDTO } from "@/repositories/produtoRepository";
+import { deleteProduct, ProductDTO, updateProduct } from "@/repositories/productRepository";
 import { eFilterStatus } from "@/types/FIlterStatus";
-import { calcularValorTotal, formatarValor } from "@/utils/itemCalculations";
+import { calculateTotalValue, formatValue } from "@/utils/itemCalculations";
 import { Feather } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
@@ -9,52 +9,52 @@ import { StatusIcon } from "./StatusIcon";
 
 type props = {
   itemId: string;
-  data: ProdutoDTO,
+  data: ProductDTO,
 }
 
 export function Item({ itemId, data }: props) {
-  const [quantidadeItem, setQuantidadeItem] = useState(data.quantidade ?? 0);
+  const [itemQuantity, setItemQuantity] = useState(data.quantity ?? 0);
 
-  // Sincroniza a quantidade quando o data.quantidade mudar
+  // Syncs quantity when data.quantity changes
   useEffect(() => {
-    setQuantidadeItem(data.quantidade);
-  }, [data.quantidade]);
+    setItemQuantity(data.quantity);
+  }, [data.quantity]);
 
-  // Calcula o valor total baseado na quantidade e tipo
-  const valorTotal = calcularValorTotal(quantidadeItem, data.tipo, data.valor);
+  // Calculates total value based on quantity and type
+  const totalValue = calculateTotalValue(itemQuantity, data.type, data.price);
 
-  function handleSomaQuantidadeItem() {
-    const newQuantity = quantidadeItem + 1;
-    setQuantidadeItem(newQuantity);
-    atualizarProduto(itemId, {
-      quantidade: newQuantity
+  function handleIncrementQuantity() {
+    const newQuantity = itemQuantity + 1;
+    setItemQuantity(newQuantity);
+    updateProduct(itemId, {
+      quantity: newQuantity
     })
   }
 
-  function handleSubQuantidadeItem() {
-    if (quantidadeItem > 0) {
-      const newQuantity = quantidadeItem - 1;
-      setQuantidadeItem(newQuantity);
-      atualizarProduto(itemId, {
-        quantidade: newQuantity
+  function handleDecrementQuantity() {
+    if (itemQuantity > 0) {
+      const newQuantity = itemQuantity - 1;
+      setItemQuantity(newQuantity);
+      updateProduct(itemId, {
+        quantity: newQuantity
       })
     }
   }
 
   function onStatusChange() {
     if (data.status === eFilterStatus.PENDING) {
-      atualizarProduto(itemId, {
+      updateProduct(itemId, {
         status: eFilterStatus.COMPLETED
       })
     } else {
-      atualizarProduto(itemId, {
+      updateProduct(itemId, {
         status: eFilterStatus.PENDING
       })
     }
   }
 
   async function onDelete() {
-    await excluirProduto(itemId);
+    await deleteProduct(itemId);
   }
 
   return (
@@ -78,13 +78,13 @@ export function Item({ itemId, data }: props) {
               gap: 4,
               justifyContent: "space-between",
             }}>
-              <Text style={styles.description}>{data.nome}</Text>
+              <Text style={styles.description}>{data.name}</Text>
 
               <TouchableOpacity onPress={onDelete}>
                 <Feather name="trash" size={16} color="red" />
               </TouchableOpacity>
             </View>
-            <Text style={styles.info}>R$ {data.valor}/{data.tipo}</Text>
+            <Text style={styles.info}>R$ {data.price}/{data.type}</Text>
 
           </View>
 
@@ -99,22 +99,22 @@ export function Item({ itemId, data }: props) {
           >
             <Input style={styles.quantidadeItens}>
               <TouchableOpacity
-                onPress={() => handleSubQuantidadeItem()}
+                onPress={() => handleDecrementQuantity()}
                 style={{ width: 12, height: 12, justifyContent: "center", alignItems: "center" }}
               >
                 <Feather name="minus" color="#cccccc" size={12} />
               </TouchableOpacity>
               <Text style={{
                 fontSize: 12
-              }}>{quantidadeItem}</Text>
+              }}>{itemQuantity}</Text>
               <TouchableOpacity
-                onPress={() => handleSomaQuantidadeItem()}
+                onPress={() => handleIncrementQuantity()}
                 style={{ width: 12, height: 12, justifyContent: "center", alignItems: "center" }}
               >
                 <Feather name="plus" color="#cccccc" size={12} />
               </TouchableOpacity>
             </Input>
-            <Text style={styles.valorTotal}>{formatarValor(valorTotal)}</Text>
+            <Text style={styles.valorTotal}>{formatValue(totalValue)}</Text>
           </View>
         </View>
       </View>

@@ -3,12 +3,12 @@ import { FlatList, Image, Pressable, StyleSheet, TouchableOpacity } from 'react-
 
 import Filter from '@/components/elements/Filter';
 import { Item } from '@/components/elements/Item';
-import { ListaSelector } from '@/components/elements/ListaSelector';
+import { ListSelector } from '@/components/elements/ListSelector';
 import { SecondaryView, Text, View } from '@/components/Themed';
 import { useItems } from '@/contexts/ItemsContext';
-import { useListas } from '@/contexts/ListasContext';
+import { useLists } from '@/contexts/ListsContext';
 import { eFilterStatus } from '@/types/FIlterStatus';
-import { formatarValor } from '@/utils/itemCalculations';
+import { formatValue } from '@/utils/itemCalculations';
 import { Feather } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -106,7 +106,7 @@ const FILTERS_STATUS: eFilterStatus[] = [
 export default function TabOneScreen() {
   const [activeFilter, setActiveFilter] = useState<eFilterStatus>(eFilterStatus.ALL);
   const { getTotalByFilter, getFilteredItems, clearItems } = useItems();
-  const { listaAtual } = useListas();
+  const { currentList } = useLists();
 
   const handleFilterChange = (status: eFilterStatus) => {
     setActiveFilter(status);
@@ -142,13 +142,13 @@ export default function TabOneScreen() {
       {/* ----- total value ----- */}
       <View style={styles.totalContainer}>
         <Text style={styles.totalLabel}>Total Payment</Text>
-        <Text style={styles.totalValue}>{formatarValor(totalPayment)}</Text>
+        <Text style={styles.totalValue}>{formatValue(totalPayment)}</Text>
       </View>
 
       <SecondaryView style={styles.listContainer}>
-        {/* Lista Selector */}
+        {/* List Selector */}
         <View style={styles.listaSelectorContainer}>
-          <ListaSelector />
+          <ListSelector />
         </View>
         <SecondaryView style={styles.filtersContainer}>
           <SecondaryView style={styles.filtersRow}>
@@ -177,7 +177,7 @@ export default function TabOneScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <SecondaryView style={styles.emptyContainer}>
-              {listaAtual ? (
+              {currentList ? (
                 <>
                   <Text style={styles.emptyText}>No items found</Text>
                   <Text style={styles.emptySubtext}>Try changing the filter</Text>
@@ -193,7 +193,7 @@ export default function TabOneScreen() {
         />
       </SecondaryView>
 
-      {listaAtual && (
+      {currentList && (
         <Link href="/modal" asChild>
           <Pressable style={styles.addItemButton}>
             {({ pressed }) => (

@@ -10,7 +10,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ItemsProvider } from '@/contexts/ItemsContext';
-import { ListasProvider } from '@/contexts/ListasContext';
+import { ListsProvider } from '@/contexts/ListsContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -82,7 +82,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <ListasProvider>
+    <ListsProvider>
       <ItemsProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
@@ -92,6 +92,6 @@ function RootLayoutNav() {
           </Stack>
         </ThemeProvider>
       </ItemsProvider>
-    </ListasProvider>
+    </ListsProvider>
   );
 }

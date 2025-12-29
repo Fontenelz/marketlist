@@ -1,16 +1,16 @@
-import { escutarProdutos, ProdutoDTO } from '@/repositories/produtoRepository';
+import { listenProducts, ProductDTO } from '@/repositories/productRepository';
 import { eFilterStatus } from '@/types/FIlterStatus';
-import { calcularValorTotal } from '@/utils/itemCalculations';
+import { calculateTotalValue } from '@/utils/itemCalculations';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { useListas } from './ListasContext';
+import { useLists } from './ListsContext';
 
 type ItemsContextType = {
-  items: ProdutoDTO[];
-  setItems: (items: ProdutoDTO[]) => void;
-  updateItemQuantity: (itemId: string, quantidade: number) => void;
-  // addItem: (item: Omit<ProdutoDTO, 'id'>) => void;
+  items: ProductDTO[];
+  setItems: (items: ProductDTO[]) => void;
+  updateItemQuantity: (itemId: string, quantity: number) => void;
+  // addItem: (item: Omit<ProductDTO, 'id'>) => void;
   getTotalByFilter: (filter: eFilterStatus) => number;
-  getFilteredItems: (filter: eFilterStatus) => ProdutoDTO[];
+  getFilteredItems: (filter: eFilterStatus) => ProductDTO[];
   clearItems: () => void;
 };
 
@@ -18,32 +18,32 @@ const ItemsContext = createContext<ItemsContextType | undefined>(undefined);
 
 type ItemsProviderProps = {
   children: ReactNode;
-  initialItems?: ProdutoDTO[];
+  initialItems?: ProductDTO[];
 };
 
 export function ItemsProvider({ children, initialItems = [] }: ItemsProviderProps) {
-  const { listaAtual } = useListas();
-  const [items, setItems] = useState<ProdutoDTO[]>(initialItems);
+  const { currentList } = useLists();
+  const [items, setItems] = useState<ProductDTO[]>(initialItems);
 
   useEffect(() => {
-    if (!listaAtual) {
+    if (!currentList) {
       setItems([]);
       return;
     }
 
-    const unsubscribe = escutarProdutos(listaAtual.id, setItems);
+    const unsubscribe = listenProducts(currentList.id, setItems);
     return unsubscribe;
-  }, [listaAtual])
+  }, [currentList])
 
-  const updateItemQuantity = (itemId: string, quantidade: number) => {
+  const updateItemQuantity = (itemId: string, quantity: number) => {
     setItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === itemId ? { ...item, quantidade: Math.max(0, quantidade) } : item
+        item.id === itemId ? { ...item, quantity: Math.max(0, quantity) } : item
       )
     );
   };
 
-  // const addItem = (item: Omit<ProdutoDTO, 'id'>) => {
+  // const addItem = (item: Omit<ProductDTO, 'id'>) => {
   //   const newId = items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1;
   //   const newItem: Item = {
   //     ...item,
@@ -52,7 +52,7 @@ export function ItemsProvider({ children, initialItems = [] }: ItemsProviderProp
   //   setItems((prevItems) => [...prevItems, newItem]);
   // };
 
-  const getFilteredItems = (filter: eFilterStatus): ProdutoDTO[] => {
+  const getFilteredItems = (filter: eFilterStatus): ProductDTO[] => {
     if (filter === eFilterStatus.ALL) {
       return items;
     }
@@ -62,7 +62,7 @@ export function ItemsProvider({ children, initialItems = [] }: ItemsProviderProp
   const getTotalByFilter = (filter: eFilterStatus): number => {
     const filteredItems = getFilteredItems(filter);
     return filteredItems.reduce((total, item) => {
-      const itemTotal = calcularValorTotal(item.quantidade, item.tipo, item.valor);
+      const itemTotal = calculateTotalValue(item.quantity, item.type, item.price);
       return total + itemTotal;
     }, 0);
   };

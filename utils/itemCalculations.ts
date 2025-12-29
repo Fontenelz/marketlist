@@ -4,131 +4,131 @@
 export type ItemType = 'kg' | 'litros' | 'unidade' | 'gramas' | 'ml';
 
 /**
- * Calcula o valor total de um item baseado na quantidade, tipo e valor unitário
+ * Calculates the total value of an item based on quantity, type and unit price
  * 
- * @param quantidade - Quantidade do item
- * @param tipo - Tipo de unidade (kg, litros, unidade, gramas, ml)
- * @param valorUnitario - Valor unitário do item
- * @returns Valor total calculado
+ * @param quantity - Item quantity
+ * @param type - Unit type (kg, litros, unidade, gramas, ml)
+ * @param unitPrice - Item unit price
+ * @returns Calculated total value
  */
-export function calcularValorTotal(
-  quantidade: number,
-  tipo: ItemType | string,
-  valorUnitario: number
+export function calculateTotalValue(
+  quantity: number,
+  type: ItemType | string,
+  unitPrice: number
 ): number {
-  const tipoNormalizado = tipo.toLowerCase() as ItemType;
+  const normalizedType = type.toLowerCase() as ItemType;
   
-  switch (tipoNormalizado) {
+  switch (normalizedType) {
     case 'kg':
     case 'litros':
     case 'unidade':
-      // Para kg, litros e unidades, o cálculo é direto: quantidade * valor unitário
-      return quantidade * valorUnitario;
+      // For kg, litros and unidades, calculation is direct: quantity * unit price
+      return quantity * unitPrice;
 
     case 'gramas':
-      // Para gramas, converte para kg primeiro (divide por 1000)
-      // valorUnitario é o preço por kg
-      const quantidadeEmKg = quantidade / 1000;
-      return quantidadeEmKg * valorUnitario;
+      // For gramas, convert to kg first (divide by 1000)
+      // unitPrice is the price per kg
+      const quantityInKg = quantity / 1000;
+      return quantityInKg * unitPrice;
 
     case 'ml':
-      // Para ml, converte para litros primeiro (divide por 1000)
-      // valorUnitario é o preço por litro
-      const quantidadeEmLitros = quantidade / 1000;
-      return quantidadeEmLitros * valorUnitario;
+      // For ml, convert to litros first (divide by 1000)
+      // unitPrice is the price per litro
+      const quantityInLitros = quantity / 1000;
+      return quantityInLitros * unitPrice;
 
     default:
-      // Para tipos desconhecidos, assume cálculo direto
-      return quantidade * valorUnitario;
+      // For unknown types, assume direct calculation
+      return quantity * unitPrice;
   }
 }
 
 /**
- * Calcula o valor unitário ajustado baseado no tipo
- * Útil para exibir o valor por unidade quando o item está em gramas ou ml
+ * Gets the adjusted unit value based on type
+ * Useful for displaying the value per unit when the item is in gramas or ml
  * 
- * @param tipo - Tipo de unidade
- * @param valorUnitario - Valor unitário original (por kg ou por litro)
- * @returns Valor unitário ajustado para a unidade base
+ * @param type - Unit type
+ * @param unitPrice - Original unit price (per kg or per litro)
+ * @returns Adjusted unit value for the base unit
  */
-export function obterValorUnitarioAjustado(
-  tipo: ItemType | string,
-  valorUnitario: number
+export function getAdjustedUnitValue(
+  type: ItemType | string,
+  unitPrice: number
 ): number {
-  const tipoNormalizado = tipo.toLowerCase() as ItemType;
+  const normalizedType = type.toLowerCase() as ItemType;
   
-  switch (tipoNormalizado) {
+  switch (normalizedType) {
     case 'gramas':
-      // Retorna o valor por grama (valor por kg / 1000)
-      return valorUnitario / 1000;
+      // Returns the value per grama (value per kg / 1000)
+      return unitPrice / 1000;
 
     case 'ml':
-      // Retorna o valor por ml (valor por litro / 1000)
-      return valorUnitario / 1000;
+      // Returns the value per ml (value per litro / 1000)
+      return unitPrice / 1000;
 
     case 'kg':
     case 'litros':
     case 'unidade':
     default:
-      return valorUnitario;
+      return unitPrice;
   }
 }
 
 /**
- * Formata o valor total para exibição em reais
+ * Formats the total value for display in reais
  * 
- * @param valor - Valor a ser formatado
- * @returns String formatada (ex: "R$ 17,98")
+ * @param value - Value to be formatted
+ * @returns Formatted string (ex: "R$ 17,98")
  */
-export function formatarValor(valor: number): string {
+export function formatValue(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(valor);
+  }).format(value);
 }
 
 /**
- * Calcula o incremento de valor ao adicionar uma unidade
+ * Calculates the value increment when adding one unit
  * 
- * @param tipo - Tipo de unidade
- * @param valorUnitario - Valor unitário
- * @returns Valor a ser incrementado
+ * @param type - Unit type
+ * @param unitPrice - Unit price
+ * @returns Value to be incremented
  */
-export function calcularIncremento(
-  tipo: ItemType | string,
-  valorUnitario: number
+export function calculateIncrement(
+  type: ItemType | string,
+  unitPrice: number
 ): number {
-  const tipoNormalizado = tipo.toLowerCase() as ItemType;
+  const normalizedType = type.toLowerCase() as ItemType;
   
-  switch (tipoNormalizado) {
+  switch (normalizedType) {
     case 'gramas':
-      // Incrementa 1g, então divide o valor por kg por 1000
-      return valorUnitario / 1000;
+      // Increments 1g, so divides the value per kg by 1000
+      return unitPrice / 1000;
 
     case 'ml':
-      // Incrementa 1ml, então divide o valor por litro por 1000
-      return valorUnitario / 1000;
+      // Increments 1ml, so divides the value per litro by 1000
+      return unitPrice / 1000;
 
     case 'kg':
     case 'litros':
     case 'unidade':
     default:
-      return valorUnitario;
+      return unitPrice;
   }
 }
 
 /**
- * Calcula o decremento de valor ao remover uma unidade
- * Mesma lógica do incremento, apenas para facilitar a leitura do código
+ * Calculates the value decrement when removing one unit
+ * Same logic as increment, just to make code more readable
  * 
- * @param tipo - Tipo de unidade
- * @param valorUnitario - Valor unitário
- * @returns Valor a ser decrementado
+ * @param type - Unit type
+ * @param unitPrice - Unit price
+ * @returns Value to be decremented
  */
-export function calcularDecremento(
-  tipo: ItemType | string,
-  valorUnitario: number
+export function calculateDecrement(
+  type: ItemType | string,
+  unitPrice: number
 ): number {
-  return calcularIncremento(tipo, valorUnitario);
+  return calculateIncrement(type, unitPrice);
 }
 

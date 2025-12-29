@@ -1,34 +1,34 @@
-import { useListas } from '@/contexts/ListasContext';
+import { useLists } from '@/contexts/ListsContext';
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SecondaryView } from '../Themed';
 
-export function ListaSelector() {
-  const { listas, listaAtual, setListaAtual, criarLista, excluirLista, loading } = useListas();
+export function ListSelector() {
+  const { lists, currentList, setCurrentList, createList, deleteList, loading } = useLists();
   const [showModal, setShowModal] = useState(false);
-  const [novaListaNome, setNovaListaNome] = useState('');
+  const [newListName, setNewListName] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const handleCriarLista = async () => {
-    if (!novaListaNome.trim()) {
+  const handleCreateList = async () => {
+    if (!newListName.trim()) {
       Alert.alert('Erro', 'Por favor, informe um nome para a lista');
       return;
     }
 
     try {
-      await criarLista(novaListaNome);
-      setNovaListaNome('');
+      await createList(newListName);
+      setNewListName('');
       setShowCreateModal(false);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível criar a lista');
     }
   };
 
-  const handleExcluirLista = (id: string, nome: string) => {
+  const handleDeleteList = (id: string, name: string) => {
     Alert.alert(
       'Excluir Lista',
-      `Tem certeza que deseja excluir a lista "${nome}"? Todos os produtos serão excluídos.`,
+      `Tem certeza que deseja excluir a lista "${name}"? Todos os produtos serão excluídos.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -36,7 +36,7 @@ export function ListaSelector() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await excluirLista(id);
+              await deleteList(id);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível excluir a lista');
             }
@@ -50,7 +50,7 @@ export function ListaSelector() {
     return null;
   }
 
-  if (listas.length === 0) {
+  if (lists.length === 0) {
     return (
       <View style={styles.container}>
         <TouchableOpacity
@@ -74,8 +74,8 @@ export function ListaSelector() {
                 style={styles.input}
                 placeholder="Nome da lista"
                 placeholderTextColor="#9CA3AF"
-                value={novaListaNome}
-                onChangeText={setNovaListaNome}
+                value={newListName}
+                onChangeText={setNewListName}
                 autoFocus
               />
               <View style={styles.modalButtons}>
@@ -83,14 +83,14 @@ export function ListaSelector() {
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => {
                     setShowCreateModal(false);
-                    setNovaListaNome('');
+                    setNewListName('');
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.confirmButton]}
-                  onPress={handleCriarLista}
+                  onPress={handleCreateList}
                 >
                   <Text style={styles.confirmButtonText}>Criar</Text>
                 </TouchableOpacity>
@@ -109,7 +109,7 @@ export function ListaSelector() {
         onPress={() => setShowModal(true)}
       >
         <Text style={styles.selectorText} numberOfLines={1}>
-          {listaAtual?.nome || 'Selecione uma lista'}
+          {currentList?.name || 'Selecione uma lista'}
         </Text>
         <Feather name="chevron-down" size={20} color="#9CA3AF" />
       </TouchableOpacity>
@@ -130,36 +130,36 @@ export function ListaSelector() {
             </View>
 
             <View style={styles.listContainer}>
-              {listas.map((lista) => (
+              {lists.map((list) => (
                 <TouchableOpacity
-                  key={lista.id}
+                  key={list.id}
                   style={[
                     styles.listaItem,
-                    lista.id === listaAtual?.id && styles.listaItemActive,
+                    list.id === currentList?.id && styles.listaItemActive,
                   ]}
                   onPress={() => {
-                    setListaAtual(lista);
+                    setCurrentList(list);
                     setShowModal(false);
                   }}
                 >
                   <View style={styles.listaItemContent}>
                     <Feather
-                      name={lista.id === listaAtual?.id ? 'check-circle' : 'circle'}
+                      name={list.id === currentList?.id ? 'check-circle' : 'circle'}
                       size={20}
-                      color={lista.id === listaAtual?.id ? '#2646B1' : '#9CA3AF'}
+                      color={list.id === currentList?.id ? '#2646B1' : '#9CA3AF'}
                     />
                     <Text
                       style={[
                         styles.listaItemText,
-                        lista.id === listaAtual?.id && styles.listaItemTextActive,
+                        list.id === currentList?.id && styles.listaItemTextActive,
                       ]}
                     >
-                      {lista.nome}
+                      {list.name}
                     </Text>
                   </View>
-                  {listas.length > 1 && (
+                  {lists.length > 1 && (
                     <TouchableOpacity
-                      onPress={() => handleExcluirLista(lista.id, lista.nome)}
+                      onPress={() => handleDeleteList(list.id, list.name)}
                       style={styles.deleteButton}
                     >
                       <Feather name="trash-2" size={18} color="#EF4444" />
@@ -196,8 +196,8 @@ export function ListaSelector() {
               style={styles.input}
               placeholder="Nome da lista"
               placeholderTextColor="#9CA3AF"
-              value={novaListaNome}
-              onChangeText={setNovaListaNome}
+              value={newListName}
+              onChangeText={setNewListName}
               autoFocus
             />
             <View style={styles.modalButtons}>
@@ -205,14 +205,14 @@ export function ListaSelector() {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setShowCreateModal(false);
-                  setNovaListaNome('');
+                  setNewListName('');
                 }}
               >
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleCriarLista}
+                onPress={handleCreateList}
               >
                 <Text style={styles.confirmButtonText}>Criar</Text>
               </TouchableOpacity>
