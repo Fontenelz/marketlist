@@ -1,16 +1,20 @@
 import { Button } from '@/components/elements/Button';
 import { Input } from '@/components/elements/Input';
+import { useAuth } from '@/contexts/AuthContext';
+import { useListas } from '@/contexts/ListasContext';
 import { salvarProduto } from '@/repositories/produtoRepository';
 import { eFilterStatus } from '@/types/FIlterStatus';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const TIPOS = ['kg', 'litros', 'unidade', 'gramas', 'ml'];
 
 export default function ModalScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { listaAtual } = useListas();
 
   const [nome, setNome] = useState('');
   const [quantidade, setQuantidade] = useState('');
@@ -21,28 +25,36 @@ export default function ModalScreen() {
 
   const handleSubmit = async () => {
     if (!nome.trim() || !quantidade || !valor) {
-      // TODO: Mostrar mensagem de erro
+      Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
     }
 
-    // const newItem: Omit<Item, 'id'> = {
-    //   nome: nome.trim(),
-    //   quantidade: parseFloat(quantidade) || 0,
-    //   tipo: tipo,
-    //   valor: parseFloat(valor) || 0,
-    //   status: status,
-    // };
+    if (!listaAtual) {
+      Alert.alert('Erro', 'Por favor, selecione uma lista primeiro');
+      router.back();
+      return;
+    }
 
-    await salvarProduto({
-      nome,
-      quantidade: parseFloat(quantidade) || 0,
-      status: status,
-      tipo,
-      valor: parseFloat(valor) || 0,
-    })
+    if (!user) {
+      Alert.alert('Erro', 'Usuário não autenticado');
+      return;
+    }
 
-    // addItem(newItem);
-    router.back();
+    try {
+      await salvarProduto({
+        nome: nome.trim(),
+        quantidade: parseFloat(quantidade) || 0,
+        status: status,
+        tipo,
+        valor: parseFloat(valor) || 0,
+        listaId: listaAtual.id,
+        userId: user.uid,
+      });
+
+      router.back();
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível salvar o produto');
+    }
   };
 
   const handleCancel = () => {

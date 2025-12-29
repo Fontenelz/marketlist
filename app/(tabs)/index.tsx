@@ -3,8 +3,10 @@ import { FlatList, Image, Pressable, StyleSheet, TouchableOpacity } from 'react-
 
 import Filter from '@/components/elements/Filter';
 import { Item } from '@/components/elements/Item';
+import { ListaSelector } from '@/components/elements/ListaSelector';
 import { SecondaryView, Text, View } from '@/components/Themed';
 import { useItems } from '@/contexts/ItemsContext';
+import { useListas } from '@/contexts/ListasContext';
 import { eFilterStatus } from '@/types/FIlterStatus';
 import { formatarValor } from '@/utils/itemCalculations';
 import { Feather } from '@expo/vector-icons';
@@ -104,7 +106,7 @@ const FILTERS_STATUS: eFilterStatus[] = [
 export default function TabOneScreen() {
   const [activeFilter, setActiveFilter] = useState<eFilterStatus>(eFilterStatus.ALL);
   const { getTotalByFilter, getFilteredItems, clearItems } = useItems();
-
+  const { listaAtual } = useListas();
 
   const handleFilterChange = (status: eFilterStatus) => {
     setActiveFilter(status);
@@ -144,6 +146,10 @@ export default function TabOneScreen() {
       </View>
 
       <SecondaryView style={styles.listContainer}>
+        {/* Lista Selector */}
+        <View style={styles.listaSelectorContainer}>
+          <ListaSelector />
+        </View>
         <SecondaryView style={styles.filtersContainer}>
           <SecondaryView style={styles.filtersRow}>
             {FILTERS_STATUS.map((status) => (
@@ -164,39 +170,43 @@ export default function TabOneScreen() {
             <Item
               key={item.id}
               itemId={item.id}
-              data={{
-                id: item.id,
-                status: item.status,
-                nome: item.nome,
-                quantidade: item.quantidade,
-                tipo: item.tipo,
-                valor: item.valor,
-              }}
+              data={item}
             />
           )}
           ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <SecondaryView style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No items found</Text>
-              <Text style={styles.emptySubtext}>Try changing the filter</Text>
+              {listaAtual ? (
+                <>
+                  <Text style={styles.emptyText}>No items found</Text>
+                  <Text style={styles.emptySubtext}>Try changing the filter</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.emptyText}>Nenhuma lista selecionada</Text>
+                  <Text style={styles.emptySubtext}>Crie ou selecione uma lista para começar</Text>
+                </>
+              )}
             </SecondaryView>
           )}
         />
       </SecondaryView>
 
-      <Link href="/modal" asChild>
-        <Pressable style={styles.addItemButton}>
-          {({ pressed }) => (
-            <Feather
-              name="plus"
-              size={24}
-              color="#FFF"
-              style={{ marginRight: 2, opacity: pressed ? 0.5 : 1 }}
-            />
-          )}
-        </Pressable>
-      </Link>
+      {listaAtual && (
+        <Link href="/modal" asChild>
+          <Pressable style={styles.addItemButton}>
+            {({ pressed }) => (
+              <Feather
+                name="plus"
+                size={24}
+                color="#FFF"
+                style={{ marginRight: 2, opacity: pressed ? 0.5 : 1 }}
+              />
+            )}
+          </Pressable>
+        </Link>
+      )}
 
       <StatusBar style="auto" />
     </View>
@@ -270,6 +280,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     overflow: 'hidden',
     paddingHorizontal: 24,
+  },
+  listaSelectorContainer: {
+    marginTop: 16,
+    marginBottom: 8,
   },
   filtersContainer: {
     justifyContent: 'space-between',

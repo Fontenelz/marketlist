@@ -10,6 +10,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ItemsProvider } from '@/contexts/ItemsContext';
+import { ListasProvider } from '@/contexts/ListasContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -81,14 +82,16 @@ function RootLayoutNav() {
   }
 
   return (
-    <ItemsProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ headerShown: false, presentation: "transparentModal" }} />
-        </Stack>
-      </ThemeProvider>
-    </ItemsProvider>
+    <ListasProvider>
+      <ItemsProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ headerShown: false, presentation: "transparentModal" }} />
+          </Stack>
+        </ThemeProvider>
+      </ItemsProvider>
+    </ListasProvider>
   );
 }

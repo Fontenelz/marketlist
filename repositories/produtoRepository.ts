@@ -1,6 +1,6 @@
 import { db } from '@/services/firebase'
 import { eFilterStatus } from '@/types/FIlterStatus'
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Timestamp, updateDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore'
 
 export type ProdutoDTO = {
   id: string
@@ -9,6 +9,8 @@ export type ProdutoDTO = {
   status: eFilterStatus
   tipo: string
   valor: number
+  listaId: string
+  userId: string
 }
 
 type Produto = {
@@ -17,6 +19,8 @@ type Produto = {
   status: string
   tipo: string
   valor: number
+  listaId: string
+  userId: string
 }
 
 export async function salvarProduto(produto: Produto) {
@@ -53,10 +57,12 @@ export async function atualizarProduto(
 }
 
 export function escutarProdutos(
+  listaId: string,
   callback: (produtos: ProdutoDTO[]) => void
 ) {
   const q = query(
     collection(db, 'produtos'),
+    where('listaId', '==', listaId),
     orderBy('criadoEm', 'desc')
   )
 

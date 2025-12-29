@@ -2,6 +2,7 @@ import { escutarProdutos, ProdutoDTO } from '@/repositories/produtoRepository';
 import { eFilterStatus } from '@/types/FIlterStatus';
 import { calcularValorTotal } from '@/utils/itemCalculations';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { useListas } from './ListasContext';
 
 type ItemsContextType = {
   items: ProdutoDTO[];
@@ -21,12 +22,18 @@ type ItemsProviderProps = {
 };
 
 export function ItemsProvider({ children, initialItems = [] }: ItemsProviderProps) {
+  const { listaAtual } = useListas();
   const [items, setItems] = useState<ProdutoDTO[]>(initialItems);
 
   useEffect(() => {
-    const unsubscribe = escutarProdutos(setItems)
-    return unsubscribe
-  }, [])
+    if (!listaAtual) {
+      setItems([]);
+      return;
+    }
+
+    const unsubscribe = escutarProdutos(listaAtual.id, setItems);
+    return unsubscribe;
+  }, [listaAtual])
 
   const updateItemQuantity = (itemId: string, quantidade: number) => {
     setItems((prevItems) =>
