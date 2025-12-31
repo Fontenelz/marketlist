@@ -31,13 +31,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="two"
+      {/* <Tabs.Screen
+        name="listItensScreen"
         options={{
-          title: 'Listas',
+          title: 'List',
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
         }}
-      />
+      /> */}
     </Tabs>
   );
 }

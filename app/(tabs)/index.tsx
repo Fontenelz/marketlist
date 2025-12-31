@@ -1,39 +1,115 @@
-import { useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, TouchableOpacity } from 'react-native';
-
-import Filter from '@/components/elements/Filter';
-import { Item } from '@/components/elements/Item';
-import { ListSelector } from '@/components/elements/ListSelector';
-import { ItemSeparator, SecondaryView, Text, View } from '@/components/Themed';
-import { useItems } from '@/contexts/ItemsContext';
+import { CardButton, ItemSeparator, SecondaryView, Text } from '@/components/Themed';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLists } from '@/contexts/ListsContext';
-import { eFilterStatus } from '@/types/FIlterStatus';
-import { formatValue } from '@/utils/itemCalculations';
+import { listenAllProducts, ProductDTO } from '@/repositories/productRepository';
+import dayjs from '@/utils/dayjs';
+import { calculateTotalValue, formatValue } from '@/utils/itemCalculations';
 import { Feather } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-const FILTERS_STATUS: eFilterStatus[] = [
-  eFilterStatus.ALL,
-  eFilterStatus.PENDING,
-  eFilterStatus.COMPLETED,
-];
+type ListSummary = {
+  listId: string;
+  listName: string;
+  listCreatedAt: Date | null,
+  totalProducts: number;
+  totalValue: number;
+  completedProducts: number;
+  pendingProducts: number;
+};
 
+export default function Index() {
+  const { lists, setCurrentList, createList, deleteList } = useLists();
+  const { user } = useAuth();
+  const router = useRouter();
+  const [allProducts, setAllProducts] = useState<ProductDTO[]>([]);
+  const [listSummaries, setListSummaries] = useState<ListSummary[]>([]);
+  const [newListName, setNewListName] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-export default function TabOneScreen() {
-  const [activeFilter, setActiveFilter] = useState<eFilterStatus>(eFilterStatus.ALL);
-  const { getTotalByFilter, getFilteredItems, clearItems } = useItems();
-  const { currentList } = useLists();
+  const handleCreateList = async () => {
+    if (!newListName.trim()) {
+      Alert.alert('Erro', 'Por favor, informe um nome para a lista');
+      return;
+    }
 
-  const handleFilterChange = (status: eFilterStatus) => {
-    setActiveFilter(status);
+    try {
+      await createList(newListName);
+      setNewListName('');
+      setShowCreateModal(false);
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível criar a lista');
+    }
   };
 
-  const totalPayment = getTotalByFilter(activeFilter);
-  const filteredItems = getFilteredItems(activeFilter);
+  const handleDeleteList = (id: string, name: string) => {
+    Alert.alert(
+      'Excluir Lista',
+      `Tem certeza que deseja excluir a lista "${name}"? Todos os produtos serão excluídos.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteList(id);
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível excluir a lista');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = listenAllProducts(user.uid, (products) => {
+      setAllProducts(products);
+    });
+
+    return unsubscribe;
+  }, [user]);
+
+  useEffect(() => {
+    const summaries: ListSummary[] = lists.map((list) => {
+      const listProducts = allProducts.filter((product) => product.listId === list.id);
+      const totalValue = listProducts.reduce((total, product) => {
+        return total + calculateTotalValue(product.quantity, product.type, product.price);
+      }, 0);
+      const completedProducts = listProducts.filter((p) => p.status === 'completed').length;
+      const pendingProducts = listProducts.filter((p) => p.status === 'pending').length;
+
+      return {
+        listId: list.id,
+        listName: list.name,
+        listCreatedAt: list.createdAt,
+        totalProducts: listProducts.length,
+        totalValue,
+        completedProducts,
+        pendingProducts,
+      };
+    });
+
+    setListSummaries(summaries);
+  }, [lists, allProducts]);
+
+  const handleSelectList = (listId: string) => {
+    const selectedList = lists.find((list) => list.id === listId);
+    if (selectedList) {
+      setCurrentList(selectedList);
+      router.push('/list-itens-screen');
+    }
+  };
 
   return (
     <View style={styles.mainContainer}>
+      <StatusBar style="auto" />
+
       {/* ----- header ----- */}
       <View style={styles.header}>
         <View style={{
@@ -56,76 +132,134 @@ export default function TabOneScreen() {
         </View>
       </View>
 
-      {/* ----- total value ----- */}
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalLabel}>Total Payment</Text>
-        <Text style={styles.totalValue}>{formatValue(totalPayment)}</Text>
-      </View>
-
       <SecondaryView style={styles.listContainer}>
-        {/* List Selector */}
-        <View style={styles.listaSelectorContainer}>
-          <ListSelector />
-        </View>
-        <SecondaryView style={styles.filtersContainer}>
-          <SecondaryView style={styles.filtersRow}>
-            {FILTERS_STATUS.map((status) => (
-              <Filter key={status} status={status} isActive={status === activeFilter} onPress={() => handleFilterChange(status)} />
-            ))}
-          </SecondaryView>
-          <TouchableOpacity style={styles.clearButton} onPress={clearItems}>
-            <Text style={styles.clearButtonText}>Limpar</Text>
-          </TouchableOpacity>
-        </SecondaryView>
         <FlatList
-          data={filteredItems}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{
-            paddingBottom: 80
+          data={listSummaries}
+          keyExtractor={(item) => item.listId}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => {
+            return <CardButton
+              style={styles.listCard}
+              onPress={() => handleSelectList(item.listId)}
+              activeOpacity={0.7}
+            >
+              <Text style={{
+                fontSize: 12,
+                color: '#a4a4a4',
+                marginBottom: 2
+              }}>
+                {item.listCreatedAt
+                  ? `Criada ${dayjs(item.listCreatedAt).fromNow()}`
+                  : ''}
+              </Text>
+              <View style={styles.listCardHeader}>
+                <Text style={styles.listCardTitle}>{item.listName}</Text>
+                <View style={styles.listCardActions}>
+                  {lists.length > 1 && (
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteList(item.listId, item.listName);
+                      }}
+                      style={styles.deleteButton}
+                    >
+                      <Feather name="trash-2" size={18} color="#EF4444" />
+                    </TouchableOpacity>
+                  )}
+                  <Feather name="chevron-right" size={20} color="#9CA3AF" />
+                </View>
+              </View>
+
+              <View style={styles.listCardStats}>
+                <View style={styles.statItem}>
+                  <Feather name="package" size={16} color="#6B7280" />
+                  <Text style={styles.statText}>{item.totalProducts} produtos</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Feather name="check-circle" size={16} color="#10B981" />
+                  <Text style={[styles.statText, styles.completedText]}>
+                    {item.completedProducts} completos
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Feather name="circle" size={16} color="#F59E0B" />
+                  <Text style={[styles.statText, styles.pendingText]}>
+                    {item.pendingProducts} pendentes
+                  </Text>
+                </View>
+              </View>
+              <ItemSeparator />
+              <View style={styles.listCardFooter}>
+                <Text style={styles.totalLabel}>Total:</Text>
+                <Text style={styles.totalValue}>{formatValue(item.totalValue)}</Text>
+              </View>
+            </CardButton>
           }}
-          renderItem={({ item }) => (
-            <Item
-              key={item.id}
-              itemId={item.id}
-              data={item}
-            />
-          )}
-          ItemSeparatorComponent={() => <ItemSeparator style={styles.itemSeparator} />}
-          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={() => (
             <SecondaryView style={styles.emptyContainer}>
-              {currentList ? (
-                <>
-                  <Text style={styles.emptyText}>No items found</Text>
-                  <Text style={styles.emptySubtext}>Try changing the filter</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.emptyText}>Nenhuma lista selecionada</Text>
-                  <Text style={styles.emptySubtext}>Crie ou selecione uma lista para começar</Text>
-                </>
-              )}
+              <Feather name="list" size={48} color="#6B7280" />
+              <Text style={styles.emptyText}>Nenhuma lista encontrada</Text>
+              <Text style={styles.emptySubtext}>Crie sua primeira lista na aba Home</Text>
             </SecondaryView>
           )}
+          showsVerticalScrollIndicator={false}
         />
       </SecondaryView>
 
-      {currentList && (
-        <Link href="/modal" asChild>
-          <Pressable style={styles.addItemButton}>
-            {({ pressed }) => (
-              <Feather
-                name="plus"
-                size={24}
-                color="#FFF"
-                style={{ marginRight: 2, opacity: pressed ? 0.5 : 1 }}
-              />
-            )}
-          </Pressable>
-        </Link>
-      )}
+      {/* Floating Add Button */}
+      <Pressable
+        style={styles.addButton}
+        onPress={() => setShowCreateModal(true)}
+      >
+        {({ pressed }) => (
+          <Feather
+            name="plus"
+            size={24}
+            color="#FFF"
+            style={{ opacity: pressed ? 0.5 : 1 }}
+          />
+        )}
+      </Pressable>
 
-      <StatusBar style="auto" />
+      {/* Create List Modal */}
+      <Modal
+        visible={showCreateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <SecondaryView style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Nova Lista de Compras</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nome da lista"
+              placeholderTextColor="#9CA3AF"
+              value={newListName}
+              onChangeText={setNewListName}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowCreateModal(false);
+                  setNewListName('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleCreateList}
+              >
+                <Text style={styles.confirmButtonText}>Criar</Text>
+              </TouchableOpacity>
+            </View>
+          </SecondaryView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -133,8 +267,6 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    alignItems: 'center',
-    // backgroundColor: '#E5E7EB',
     paddingTop: 64,
   },
   header: {
@@ -143,7 +275,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    marginBottom: 24,
   },
   logo: {
     backgroundColor: "#FFF",
@@ -176,73 +307,171 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     color: '#1F2937',
   },
-  totalContainer: {
-    width: '100%',
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  totalLabel: {
-    color: '#6B7280',
-    fontSize: 14,
-  },
-  totalValue: {
-    color: '#bec4cf',
-    fontSize: 30,
-    fontWeight: 'bold',
-  },
   listContainer: {
-    width: '100%',
     flex: 1,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
     paddingHorizontal: 24,
+    paddingTop: 16,
   },
-  listaSelectorContainer: {
-    marginTop: 16,
-    marginBottom: 8,
+  listContent: {
+    paddingBottom: 80,
   },
-  filtersContainer: {
+  listCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#C4C4C4',
+  },
+  listCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: 12,
+  },
+  listCardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+  },
+  listCardActions: {
     flexDirection: 'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#646e7d',
+    alignItems: 'center',
+    gap: 12,
   },
-  filtersRow: {
+  deleteButton: {
+    padding: 4,
+  },
+  listCardStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
   },
-  clearButton: {
-    marginLeft: 'auto',
+  statText: {
+    fontSize: 12,
+    color: '#9CA3AF',
   },
-  clearButtonText: {
-    color: '#2563EB',
+  completedText: {
+    color: '#10B981',
+  },
+  pendingText: {
+    color: '#F59E0B',
+  },
+  listCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+  },
+  totalLabel: {
     fontSize: 14,
+    color: '#9CA3AF',
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2646B1',
+  },
+  separator: {
+    height: 12,
   },
   emptyContainer: {
-    height: 400,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 80,
   },
   emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
     color: '#6B7280',
-    fontSize: 16,
+    marginTop: 16,
   },
   emptySubtext: {
-    color: '#6B7280',
     fontSize: 14,
+    color: '#6B7280',
+    marginTop: 8,
   },
-  addItemButton: {
+  addButton: {
     position: 'absolute',
     bottom: 24,
     right: 24,
-    width: 48,
-    height: 48,
+    width: 56,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563EB',
-    borderRadius: 10,
+    backgroundColor: '#2646B1',
+    borderRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 24,
+  },
+  input: {
+    backgroundColor: '#1F2937',
+    color: '#FFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    fontSize: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  confirmButton: {
+    backgroundColor: '#2646B1',
+  },
+  cancelButtonText: {
+    color: '#9CA3AF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

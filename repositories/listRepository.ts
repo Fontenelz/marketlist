@@ -1,11 +1,11 @@
 import { db } from '@/services/firebase'
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
 
 export type ShoppingListDTO = {
   id: string
   name: string
   userId: string
-  createdAt: Timestamp
+  createdAt: Date | null
 }
 
 type ShoppingList = {
@@ -16,7 +16,7 @@ type ShoppingList = {
 export async function createList(list: ShoppingList) {
   await addDoc(collection(db, 'lists'), {
     ...list,
-    createdAt: Timestamp.now(),
+    createdAt: serverTimestamp(),
   })
 }
 
@@ -29,10 +29,15 @@ export async function listLists(userId: string): Promise<ShoppingListDTO[]> {
 
   const snapshot = await getDocs(q)
 
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...(doc.data() as Omit<ShoppingListDTO, 'id'>),
-  }))
+  return snapshot.docs.map(doc => {
+    const data = doc.data()
+
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: data.createdAt?.toDate() ?? null,
+    } as ShoppingListDTO
+  })
 }
 
 export function listenLists(
@@ -46,10 +51,15 @@ export function listenLists(
   )
 
   return onSnapshot(q, snapshot => {
-    const lists = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...(doc.data() as Omit<ShoppingListDTO, 'id'>),
-    }))
+    const lists = snapshot.docs.map(doc => {
+      const data = doc.data()
+
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() ?? null,
+      } as ShoppingListDTO
+    })
     callback(lists)
   })
 }
