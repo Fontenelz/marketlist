@@ -125,7 +125,7 @@ export function Item({ itemId, data }: props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingVertical: 16,
     gap: 12

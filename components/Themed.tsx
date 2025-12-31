@@ -3,7 +3,7 @@
  * https://docs.expo.io/guides/color-schemes/
  */
 
-import { Text as DefaultText, View as DefaultView } from 'react-native';
+import { Text as DefaultText, TouchableOpacity as DefaultTouchableOpacity, View as DefaultView, TouchableOpacityProps } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from './useColorScheme';
@@ -15,6 +15,7 @@ type ThemeProps = {
 
 export type TextProps = ThemeProps & DefaultText['props'];
 export type ViewProps = ThemeProps & DefaultView['props'];
+export type TouchableOpacityPropsType = ThemeProps & TouchableOpacityProps;
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
@@ -56,4 +57,18 @@ export function Input(props: ViewProps) {
   const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'inputBackground');
 
   return <DefaultView style={[{ backgroundColor: backgroundColor }, style]} {...otherProps} />;
+}
+
+export function ItemSeparator(props: ViewProps) {
+  const { style, lightColor, darkColor, ...otherProps } = props;
+  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'itemSeparator');
+
+  return <DefaultView style={[{ backgroundColor: backgroundColor }, style, { height: 1 }]} {...otherProps} />;
+}
+
+export function CardButton(props: TouchableOpacityPropsType) {
+  const { style, lightColor, darkColor, ...otherProps } = props;
+  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'cardBackground');
+
+  return <DefaultTouchableOpacity style={[{ backgroundColor: backgroundColor }, style]} {...otherProps} />;
 }

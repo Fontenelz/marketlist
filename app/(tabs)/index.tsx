@@ -4,7 +4,7 @@ import { FlatList, Image, Pressable, StyleSheet, TouchableOpacity } from 'react-
 import Filter from '@/components/elements/Filter';
 import { Item } from '@/components/elements/Item';
 import { ListSelector } from '@/components/elements/ListSelector';
-import { SecondaryView, Text, View } from '@/components/Themed';
+import { ItemSeparator, SecondaryView, Text, View } from '@/components/Themed';
 import { useItems } from '@/contexts/ItemsContext';
 import { useLists } from '@/contexts/ListsContext';
 import { eFilterStatus } from '@/types/FIlterStatus';
@@ -90,7 +90,7 @@ export default function TabOneScreen() {
               data={item}
             />
           )}
-          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+          ItemSeparatorComponent={() => <ItemSeparator style={styles.itemSeparator} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <SecondaryView style={styles.emptyContainer}>
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F3f3f3',
     borderRadius: 18,
   },
   headerButtonSecondary: {
@@ -220,10 +220,6 @@ const styles = StyleSheet.create({
   clearButtonText: {
     color: '#2563EB',
     fontSize: 14,
-  },
-  itemSeparator: {
-    height: 1,
-    backgroundColor: '#141b24',
   },
   emptyContainer: {
     height: 400,

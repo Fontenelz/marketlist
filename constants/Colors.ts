@@ -10,6 +10,8 @@ export default {
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorLight,
     inputBackground: '#F3F4F6',
+    itemSeparator: '#CCCCCC',
+    cardBackground: '#F3F4F6',
   },
   dark: {
     text: '#fff',
@@ -19,5 +21,7 @@ export default {
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorDark,
     inputBackground: '#0a0e12',
+    itemSeparator: '#1a1e23',
+    cardBackground: '#1F2937',
   },
 };

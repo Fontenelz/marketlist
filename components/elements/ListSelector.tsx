@@ -2,11 +2,12 @@ import { useLists } from '@/contexts/ListsContext';
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
 import { SecondaryView } from '../Themed';
 
 export function ListSelector() {
-  const { lists, currentList, setCurrentList, createList, deleteList, loading } = useLists();
-  const [showModal, setShowModal] = useState(false);
+  const { lists, currentList, setCurrentList, createList, loading } = useLists();
+  const [isFocus, setIsFocus] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -25,34 +26,13 @@ export function ListSelector() {
     }
   };
 
-  const handleDeleteList = (id: string, name: string) => {
-    Alert.alert(
-      'Excluir Lista',
-      `Tem certeza que deseja excluir a lista "${name}"? Todos os produtos serão excluídos.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteList(id);
-            } catch (error) {
-              Alert.alert('Erro', 'Não foi possível excluir a lista');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   if (loading) {
     return null;
   }
 
   if (lists.length === 0) {
     return (
-      <View style={styles.container}>
+      <View>
         <TouchableOpacity
           style={styles.createButton}
           onPress={() => setShowCreateModal(true)}
@@ -102,147 +82,86 @@ export function ListSelector() {
     );
   }
 
+  const dropdownData = lists.map((list) => ({
+    label: list.name,
+    value: list.id,
+  }));
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.selectorButton}
-        onPress={() => setShowModal(true)}
-      >
-        <Text style={styles.selectorText} numberOfLines={1}>
-          {currentList?.name || 'Selecione uma lista'}
-        </Text>
-        <Feather name="chevron-down" size={20} color="#9CA3AF" />
-      </TouchableOpacity>
-
-      <Modal
-        visible={showModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <SecondaryView style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Listas de Compras</Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Feather name="x" size={24} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.listContainer}>
-              {lists.map((list) => (
-                <TouchableOpacity
-                  key={list.id}
-                  style={[
-                    styles.listaItem,
-                    list.id === currentList?.id && styles.listaItemActive,
-                  ]}
-                  onPress={() => {
-                    setCurrentList(list);
-                    setShowModal(false);
-                  }}
-                >
-                  <View style={styles.listaItemContent}>
-                    <Feather
-                      name={list.id === currentList?.id ? 'check-circle' : 'circle'}
-                      size={20}
-                      color={list.id === currentList?.id ? '#2646B1' : '#9CA3AF'}
-                    />
-                    <Text
-                      style={[
-                        styles.listaItemText,
-                        list.id === currentList?.id && styles.listaItemTextActive,
-                      ]}
-                    >
-                      {list.name}
-                    </Text>
-                  </View>
-                  {lists.length > 1 && (
-                    <TouchableOpacity
-                      onPress={() => handleDeleteList(list.id, list.name)}
-                      style={styles.deleteButton}
-                    >
-                      <Feather name="trash-2" size={18} color="#EF4444" />
-                    </TouchableOpacity>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => {
-                setShowModal(false);
-                setShowCreateModal(true);
-              }}
-            >
-              <Feather name="plus" size={20} color="#2646B1" />
-              <Text style={styles.addButtonText}>Nova Lista</Text>
-            </TouchableOpacity>
-          </SecondaryView>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={showCreateModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCreateModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <SecondaryView style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Nova Lista de Compras</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nome da lista"
-              placeholderTextColor="#9CA3AF"
-              value={newListName}
-              onChangeText={setNewListName}
-              autoFocus
+      <View style={styles.dropdownContainer}>
+        <Dropdown
+          style={[styles.dropdown, isFocus && styles.dropdownFocus]}
+          placeholderStyle={styles.placeholderStyle}
+          selectedTextStyle={styles.selectedTextStyle}
+          inputSearchStyle={styles.inputSearchStyle}
+          iconStyle={styles.iconStyle}
+          data={dropdownData}
+          search
+          maxHeight={300}
+          labelField="label"
+          valueField="value"
+          placeholder={!isFocus ? 'Selecione uma lista' : '...'}
+          searchPlaceholder="Buscar..."
+          value={currentList?.id || null}
+          onFocus={() => setIsFocus(true)}
+          onBlur={() => setIsFocus(false)}
+          onChange={(item) => {
+            const selectedList = lists.find((list) => list.id === item.value);
+            if (selectedList) {
+              setCurrentList(selectedList);
+            }
+            setIsFocus(false);
+          }}
+          renderLeftIcon={() => (
+            <Feather
+              name={isFocus ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="#9CA3AF"
+              style={styles.icon}
             />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowCreateModal(false);
-                  setNewListName('');
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleCreateList}
-              >
-                <Text style={styles.confirmButtonText}>Criar</Text>
-              </TouchableOpacity>
-            </View>
-          </SecondaryView>
-        </View>
-      </Modal>
+          )}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
-  selectorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#C4c4c4',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+  dropdown: {
+    height: 50,
+    backgroundColor: '#F3F3F3',
     borderColor: '#374151',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
   },
-  selectorText: {
-    color: '#FFF',
+  dropdownFocus: {
+    borderColor: '#2646B1',
+    borderWidth: 2,
+  },
+  placeholderStyle: {
     fontSize: 16,
+    color: '#9CA3AF',
+  },
+  selectedTextStyle: {
+    fontSize: 16,
+    color: '#1F2937',
     fontWeight: '600',
-    flex: 1,
+  },
+  iconStyle: {
+    width: 20,
+    height: 20,
+  },
+  icon: {
     marginRight: 8,
+  },
+  inputSearchStyle: {
+    height: 40,
+    fontSize: 16,
+    backgroundColor: '#1F2937',
+    color: '#FFF',
+    borderRadius: 8,
   },
   createButton: {
     flexDirection: 'row',
@@ -270,68 +189,10 @@ const styles = StyleSheet.create({
     padding: 24,
     maxHeight: '80%',
   },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFF',
-  },
-  listContainer: {
-    maxHeight: 400,
-  },
-  listaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: '#1F2937',
-  },
-  listaItemActive: {
-    backgroundColor: '#1E3A8A',
-    borderWidth: 1,
-    borderColor: '#2646B1',
-  },
-  listaItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  listaItemText: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    flex: 1,
-  },
-  listaItemTextActive: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  deleteButton: {
-    padding: 4,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#2646B1',
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#2646B1',
-    fontSize: 16,
-    fontWeight: '600',
   },
   input: {
     backgroundColor: '#1F2937',

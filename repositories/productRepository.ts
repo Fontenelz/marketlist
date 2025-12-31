@@ -75,6 +75,25 @@ export function listenProducts(
   })
 }
 
+export function listenAllProducts(
+  userId: string,
+  callback: (products: ProductDTO[]) => void
+) {
+  const q = query(
+    collection(db, 'products'),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  )
+
+  return onSnapshot(q, snapshot => {
+    const products = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...(doc.data() as Omit<ProductDTO, 'id'>),
+    }))
+    callback(products)
+  })
+}
+
 export async function deleteProduct(id: string) {
   await deleteDoc(doc(db, 'products', id))
 }
