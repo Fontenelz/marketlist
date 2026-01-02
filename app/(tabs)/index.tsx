@@ -166,7 +166,6 @@ export default function Index() {
                       <Feather name="trash-2" size={18} color="#EF4444" />
                     </TouchableOpacity>
                   )}
-                  <Feather name="chevron-right" size={20} color="#9CA3AF" />
                 </View>
               </View>
 
